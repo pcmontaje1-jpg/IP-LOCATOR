@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>IP Geolocation Finder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 600px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #667eea;
+        }
+        button {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .result {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .result.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            color: #666;
+        }
+        .value {
+            color: #333;
+        }
+        #map {
+            height: 300px;
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+        .error {
+            color: #e53e3e;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 IP Geolocation Finder</h1>
+        
+        <div class="input-group">
+            <input type="text" id="ipInput" placeholder="Введите IP адрес (например, 8.8.8.8)">
+            <button onclick="lookupIP()">Найти</button>
+        </div>
+        
+        <button onclick="getMyIP()" style="width: 100%; background: #48bb78;">
+            📍 Определить мой IP
+        </button>
+        
+        <div id="error" class="error"></div>
+        
+        <div id="result" class="result">
+            <div class="info-item">
+                <span class="label">IP:</span>
+                <span class="value" id="ip"></span>
+            </div>
+            <div class="info-item">
+                <span class="label">Страна:</span>
+                <span class="value" id="country"></span>
+            </div>
+            <div class="info-item">
+                <span class="label">Город:</span>
+                <span class="value" id="city"></span>
+            </div>
+            <div class="info-item">
+                <span class="label">Регион:</span>
+                <span class="value" id="region"></span>
+            </div>
+            <div class="info-item">
+                <span class="label">Провайдер:</span>
+                <span class="value" id="isp"></span>
+            </div>
+            <div class="info-item">
+                <span class="label">Координаты:</span>
+                <span class="value" id="coords"></span>
+            </div>
+            <div class="info-item">
+                <span class="label">Часовой пояс:</span>
+                <span class="value" id="timezone"></span>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        let map = null;
+
+        async function lookupIP(ip = null) {
+            const ipAddress = ip || document.getElementById('ipInput').value;
+            
+            if (!ipAddress) {
+                showError('Пожалуйста, введите IP адрес');
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://ipapi.co/${ipAddress}/json/`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    showError('Не удалось найти информацию об этом IP');
+                    return;
+                }
+                
+                displayResult(data);
+            } catch (error) {
+                showError('Ошибка при получении данных');
+            }
+        }
+
+        async function getMyIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                document.getElementById('ipInput').value = data.ip;
+                lookupIP(data.ip);
+            } catch (error) {
+                showError('Не удалось определить ваш IP');
+            }
+        }
+
+        function displayResult(data) {
+            document.getElementById('error').innerHTML = '';
+            document.getElementById('result').classList.add('active');
+            
+            document.getElementById('ip').textContent = data.ip;
+            document.getElementById('country').textContent = `${data.country_name} (${data.country_code})`;
+            document.getElementById('city').textContent = data.city || 'Не определено';
+            document.getElementById('region').textContent = data.region || 'Не определено';
+            document.getElementById('isp').textContent = data.org || 'Не определено';
+            document.getElementById('coords').textContent = `${data.latitude}, ${data.longitude}`;
+            document.getElementById('timezone').textContent = data.timezone || 'Не определено';
+            
+            if (data.latitude && data.longitude) {
+                showMap(data.latitude, data.longitude, data.city || data.country_name);
+            }
+        }
+
+        function showMap(lat, lon, locationName) {
+            if (map) {
+                map.remove();
+            }
+            
+            map = L.map('map').setView([lat, lon], 12);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            L.marker([lat, lon])
+                .addTo(map)
+                .bindPopup(locationName)
+                .openPopup();
+        }
+
+        function showError(message) {
+            document.getElementById('error').innerHTML = message;
+            document.getElementById('result').classList.remove('active');
+        }
+
+        // Обработка Enter
+        document.getElementById('ipInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                lookupIP();
+            }
+        });
+    </script>
+</body>
+</html>
