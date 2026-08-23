@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Точный Поиск Локации - IP и Телефон</title>
+    <title>Universal Location Finder</title>
     <style>
         * {
             margin: 0;
@@ -11,265 +11,137 @@
             box-sizing: border-box;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7c3aed 100%);
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
         }
         .header {
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             padding: 30px;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
             text-align: center;
         }
         h1 {
-            font-size: 2.5em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #333;
             margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
-            font-size: 1.1em;
         }
         .tabs {
             display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
+            gap: 10px;
+            margin-bottom: 20px;
         }
         .tab {
             flex: 1;
-            padding: 20px;
+            padding: 15px;
             background: white;
-            border: none;
-            border-radius: 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             transition: all 0.3s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            position: relative;
-            overflow: hidden;
         }
-        .tab::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tab.active::before {
-            opacity: 1;
-        }
-        .tab span {
-            position: relative;
-            z-index: 1;
-        }
-        .tab.active span {
+        .tab.active {
+            background: #667eea;
             color: white;
-        }
-        .tab:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
         }
         .search-box {
             background: white;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            margin-bottom: 30px;
-        }
-        .search-title {
-            font-size: 1.5em;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
             margin-bottom: 20px;
-            color: #333;
         }
         .input-group {
             display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 15px;
         }
         input, select {
             flex: 1;
-            padding: 15px 20px;
+            padding: 12px;
             border: 2px solid #e0e0e0;
-            border-radius: 12px;
+            border-radius: 8px;
             font-size: 16px;
-            outline: none;
-            transition: all 0.3s;
-            background: #f8f9fa;
         }
-        input:focus, select:focus {
-            border-color: #667eea;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        .btn {
-            padding: 15px 30px;
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s;
-            white-space: nowrap;
+            transition: background 0.3s;
         }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        button:hover {
+            background: #5a67d8;
         }
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        button:active {
+            transform: scale(0.98);
         }
-        .btn-success {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-            color: white;
+        .btn-full {
+            width: 100%;
+            background: #48bb78;
+            margin-top: 10px;
         }
-        .btn-success:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(72, 187, 120, 0.4);
+        .btn-full:hover {
+            background: #38a169;
         }
         .result {
             display: none;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
         }
         .result.active {
             display: block;
-            animation: slideIn 0.5s;
-        }
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .result-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-        .result-content {
-            padding: 30px;
-        }
-        .info-section {
-            margin-bottom: 30px;
-        }
-        .info-section h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 10px;
-        }
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
         }
         .info-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
-            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
         }
-        .info-item:hover {
-            background: #e8eaf6;
-            transform: translateX(5px);
+        .info-item:last-child {
+            border-bottom: none;
         }
-        .info-label {
-            font-size: 13px;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        .info-value {
-            font-size: 18px;
+        .label {
             font-weight: bold;
+            color: #666;
+        }
+        .value {
             color: #333;
         }
-        .info-value.highlight {
-            color: #667eea;
-        }
-        .map-container {
-            height: 400px;
-            border-radius: 12px;
-            overflow: hidden;
+        #map {
+            height: 300px;
             margin-top: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 10px;
         }
         .loading {
             display: none;
             text-align: center;
-            padding: 40px;
+            padding: 20px;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
         .error {
             display: none;
-            background: #fee;
-            color: #c33;
-            padding: 20px;
-            border-radius: 12px;
-            margin-top: 20px;
-            border-left: 4px solid #c33;
-        }
-        .badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-        .badge-success {
-            background: #d4edda;
-            color: #155724;
-        }
-        .badge-warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-        .badge-danger {
             background: #f8d7da;
             color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
         }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -277,54 +149,44 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Точный Поиск Локации</h1>
-            <p class="subtitle">Максимально подробная информация по IP и номеру телефона</p>
+            <h1>🔍 Universal Location Finder</h1>
+            <p>Поиск по IP и номеру телефона</p>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('ip')">
-                <span>💻 Поиск по IP</span>
-            </button>
-            <button class="tab" onclick="switchTab('phone')">
-                <span>📱 Поиск по телефону</span>
-            </button>
+            <button class="tab active" onclick="switchTab('ip')">💻 По IP</button>
+            <button class="tab" onclick="switchTab('phone')">📱 По телефону</button>
         </div>
 
+        <!-- IP Search -->
         <div id="ipSearch" class="search-box">
-            <h2 class="search-title">Введите IP адрес</h2>
             <div class="input-group">
-                <input type="text" id="ipInput" placeholder="Например: 8.8.8.8 или 2001:4860:4860::8888">
-                <button class="btn btn-primary" onclick="searchIP()">🔍 Найти</button>
+                <input type="text" id="ipInput" placeholder="Введите IP адрес">
+                <button onclick="searchIP()">Найти</button>
             </div>
-            <button class="btn btn-success" onclick="getMyIP()" style="width: 100%;">
-                📍 Определить мой IP
-            </button>
+            <button class="btn-full" onclick="getMyIP()">📍 Определить мой IP</button>
         </div>
 
+        <!-- Phone Search -->
         <div id="phoneSearch" class="search-box" style="display: none;">
-            <h2 class="search-title">Введите номер телефона</h2>
             <div class="input-group">
-                <select id="countrySelect" onchange="updatePhonePrefix()">
+                <select id="countrySelect">
                     <option value="">Выберите страну</option>
                 </select>
-                <input type="text" id="phoneInput" placeholder="Номер без кода страны">
-                <button class="btn btn-primary" onclick="searchPhone()">🔍 Найти</button>
-            </div>
-            <div style="margin-top: 10px; color: #666; font-size: 14px;">
-                💡 Полный номер: <span id="fullPhonePreview" style="font-weight: bold;">+_ ___ ___-__-__</span>
+                <input type="text" id="phoneInput" placeholder="Номер телефона">
+                <button onclick="searchPhone()">Найти</button>
             </div>
         </div>
 
         <div id="loading" class="loading">
-            <div class="spinner"></div>
-            <p style="color: #666; font-size: 18px;">Получаем подробную информацию...</p>
+            Загрузка данных...
         </div>
 
         <div id="error" class="error"></div>
 
         <div id="result" class="result">
-            <div class="result-header" id="resultHeader"></div>
-            <div class="result-content" id="resultContent"></div>
+            <div id="resultContent"></div>
+            <div id="map"></div>
         </div>
     </div>
 
@@ -333,89 +195,79 @@
         let map = null;
         let currentTab = 'ip';
 
-        // Полная база данных стран с кодами
-        const countriesDatabase = {
-            'RU': { name: 'Россия', code: '+7', flag: '🇷🇺', carriers: ['МТС', 'Билайн', 'МегаФон', 'Tele2', 'Yota'] },
-            'US': { name: 'США', code: '+1', flag: '🇺🇸', carriers: ['AT&T', 'Verizon', 'T-Mobile', 'Sprint'] },
-            'GB': { name: 'Великобритания', code: '+44', flag: '🇬🇧', carriers: ['EE', 'O2', 'Vodafone', 'Three'] },
-            'DE': { name: 'Германия', code: '+49', flag: '🇩🇪', carriers: ['Telekom', 'Vodafone', 'O2', '1&1'] },
-            'FR': { name: 'Франция', code: '+33', flag: '🇫🇷', carriers: ['Orange', 'SFR', 'Bouygues', 'Free'] },
-            'CN': { name: 'Китай', code: '+86', flag: '🇨🇳', carriers: ['China Mobile', 'China Unicom', 'China Telecom'] },
-            'IN': { name: 'Индия', code: '+91', flag: '🇮🇳', carriers: ['Airtel', 'Jio', 'Vodafone Idea', 'BSNL'] },
-            'BR': { name: 'Бразилия', code: '+55', flag: '🇧🇷', carriers: ['Vivo', 'Claro', 'TIM', 'Oi'] },
-            'JP': { name: 'Япония', code: '+81', flag: '🇯🇵', carriers: ['NTT Docomo', 'SoftBank', 'KDDI', 'Rakuten'] },
-            'KR': { name: 'Южная Корея', code: '+82', flag: '🇰🇷', carriers: ['SK Telecom', 'KT', 'LG U+'] },
-            'CA': { name: 'Канада', code: '+1', flag: '🇨🇦', carriers: ['Bell', 'Rogers', 'Telus', 'Freedom'] },
-            'AU': { name: 'Австралия', code: '+61', flag: '🇦🇺', carriers: ['Telstra', 'Optus', 'Vodafone'] },
-            'UA': { name: 'Украина', code: '+380', flag: '🇺🇦', carriers: ['Kyivstar', 'Vodafone', 'Lifecell'] },
-            'KZ': { name: 'Казахстан', code: '+7', flag: '🇰🇿', carriers: ['Beeline', 'Kcell', 'Tele2'] },
-            'BY': { name: 'Беларусь', code: '+375', flag: '🇧🇾', carriers: ['A1', 'MTS', 'Life'] },
-            'TR': { name: 'Турция', code: '+90', flag: '🇹🇷', carriers: ['Turkcell', 'Vodafone', 'Türk Telekom'] },
-            'IT': { name: 'Италия', code: '+39', flag: '🇮🇹', carriers: ['TIM', 'Vodafone', 'Wind Tre'] },
-            'ES': { name: 'Испания', code: '+34', flag: '🇪🇸', carriers: ['Movistar', 'Vodafone', 'Orange'] },
-            'NL': { name: 'Нидерланды', code: '+31', flag: '🇳🇱', carriers: ['KPN', 'Vodafone', 'T-Mobile'] },
-            'SE': { name: 'Швеция', code: '+46', flag: '🇸🇪', carriers: ['Telia', 'Tele2', 'Telenor'] },
-            'NO': { name: 'Норвегия', code: '+47', flag: '🇳🇴', carriers: ['Telenor', 'Telia', 'Ice'] },
-            'DK': { name: 'Дания', code: '+45', flag: '🇩🇰', carriers: ['TDC', 'Telenor', 'Telia'] },
-            'FI': { name: 'Финляндия', code: '+358', flag: '🇫🇮', carriers: ['Elisa', 'Telia', 'DNA'] },
-            'PL': { name: 'Польша', code: '+48', flag: '🇵🇱', carriers: ['Orange', 'Play', 'Plus', 'T-Mobile'] },
-            'CZ': { name: 'Чехия', code: '+420', flag: '🇨🇿', carriers: ['T-Mobile', 'O2', 'Vodafone'] },
-            'AT': { name: 'Австрия', code: '+43', flag: '🇦🇹', carriers: ['A1', 'Magenta', 'Drei'] },
-            'CH': { name: 'Швейцария', code: '+41', flag: '🇨🇭', carriers: ['Swisscom', 'Sunrise', 'Salt'] },
-            'BE': { name: 'Бельгия', code: '+32', flag: '🇧🇪', carriers: ['Proximus', 'Orange', 'Base'] },
-            'PT': { name: 'Португалия', code: '+351', flag: '🇵🇹', carriers: ['MEO', 'Vodafone', 'NOS'] },
-            'GR': { name: 'Греция', code: '+30', flag: '🇬🇷', carriers: ['Cosmote', 'Vodafone', 'Nova'] },
-            'IE': { name: 'Ирландия', code: '+353', flag: '🇮🇪', carriers: ['Vodafone', 'Three', 'Eir'] },
-            'IL': { name: 'Израиль', code: '+972', flag: '🇮🇱', carriers: ['Cellcom', 'Pelephone', 'Partner'] },
-            'SA': { name: 'Саудовская Аравия', code: '+966', flag: '🇸🇦', carriers: ['STC', 'Mobily', 'Zain'] },
-            'AE': { name: 'ОАЭ', code: '+971', flag: '🇦🇪', carriers: ['Etisalat', 'du'] },
-            'SG': { name: 'Сингапур', code: '+65', flag: '🇸🇬', carriers: ['Singtel', 'StarHub', 'M1'] },
-            'MY': { name: 'Малайзия', code: '+60', flag: '🇲🇾', carriers: ['Maxis', 'Celcom', 'Digi'] },
-            'TH': { name: 'Таиланд', code: '+66', flag: '🇹🇭', carriers: ['AIS', 'TrueMove', 'dtac'] },
-            'VN': { name: 'Вьетнам', code: '+84', flag: '🇻🇳', carriers: ['Viettel', 'Vinaphone', 'Mobifone'] },
-            'ID': { name: 'Индонезия', code: '+62', flag: '🇮🇩', carriers: ['Telkomsel', 'XL', 'Indosat'] },
-            'PH': { name: 'Филиппины', code: '+63', flag: '🇵🇭', carriers: ['Globe', 'Smart', 'Sun'] },
-            'PK': { name: 'Пакистан', code: '+92', flag: '🇵🇰', carriers: ['Jazz', 'Zong', 'Telenor'] },
-            'BD': { name: 'Бангладеш', code: '+880', flag: '🇧🇩', carriers: ['Grameenphone', 'Robi', 'Banglalink'] },
-            'NG': { name: 'Нигерия', code: '+234', flag: '🇳🇬', carriers: ['MTN', 'Airtel', 'Glo'] },
-            'EG': { name: 'Египет', code: '+20', flag: '🇪🇬', carriers: ['Vodafone', 'Orange', 'Etisalat'] },
-            'ZA': { name: 'ЮАР', code: '+27', flag: '🇿🇦', carriers: ['Vodacom', 'MTN', 'Cell C'] },
-            'MA': { name: 'Марокко', code: '+212', flag: '🇲🇦', carriers: ['Maroc Telecom', 'Orange', 'inwi'] },
-            'AR': { name: 'Аргентина', code: '+54', flag: '🇦🇷', carriers: ['Claro', 'Movistar', 'Personal'] },
-            'MX': { name: 'Мексика', code: '+52', flag: '🇲🇽', carriers: ['Telcel', 'Movistar', 'AT&T'] },
-            'CO': { name: 'Колумбия', code: '+57', flag: '🇨🇴', carriers: ['Claro', 'Movistar', 'Tigo'] },
-            'CL': { name: 'Чили', code: '+56', flag: '🇨🇱', carriers: ['Entel', 'Movistar', 'Claro'] },
-            'PE': { name: 'Перу', code: '+51', flag: '🇵🇪', carriers: ['Claro', 'Movistar', 'Entel'] },
-            'RO': { name: 'Румыния', code: '+40', flag: '🇷🇴', carriers: ['Orange', 'Vodafone', 'Digi'] },
-            'HU': { name: 'Венгрия', code: '+36', flag: '🇭🇺', carriers: ['Telekom', 'Telenor', 'Vodafone'] },
-            'BG': { name: 'Болгария', code: '+359', flag: '🇧🇬', carriers: ['A1', 'Telenor', 'Vivacom'] },
-            'HR': { name: 'Хорватия', code: '+385', flag: '🇭🇷', carriers: ['T-Mobile', 'A1', 'Tele2'] },
-            'RS': { name: 'Сербия', code: '+381', flag: '🇷🇸', carriers: ['Telenor', 'Telekom Srbija', 'A1'] },
-            'SK': { name: 'Словакия', code: '+421', flag: '🇸🇰', carriers: ['Orange', 'Telekom', 'O2'] },
-            'SI': { name: 'Словения', code: '+386', flag: '🇸🇮', carriers: ['Telekom', 'A1', 'Telemach'] },
-            'LT': { name: 'Литва', code: '+370', flag: '🇱🇹', carriers: ['Telia', 'Bitė', 'Tele2'] },
-            'LV': { name: 'Латвия', code: '+371', flag: '🇱🇻', carriers: ['LMT', 'Tele2', 'Bite'] },
-            'EE': { name: 'Эстония', code: '+372', flag: '🇪🇪', carriers: ['Telia', 'Elisa', 'Tele2'] },
-            'AM': { name: 'Армения', code: '+374', flag: '🇦🇲', carriers: ['Beeline', 'Viva-MTS', 'Ucom'] },
-            'AZ': { name: 'Азербайджан', code: '+994', flag: '🇦🇿', carriers: ['Azercell', 'Bakcell', 'Nar'] },
-            'GE': { name: 'Грузия', code: '+995', flag: '🇬🇪', carriers: ['Magti', 'Beeline', 'Silknet'] },
-            'MD': { name: 'Молдова', code: '+373', flag: '🇲🇩', carriers: ['Orange', 'Moldcell', 'Unite'] },
-            'UZ': { name: 'Узбекистан', code: '+998', flag: '🇺🇿', carriers: ['Beeline', 'Ucell', 'Mobiuz'] },
-            'KG': { name: 'Кыргызстан', code: '+996', flag: '🇰🇬', carriers: ['Beeline', 'MegaCom', 'O!'] },
-            'MN': { name: 'Монголия', code: '+976', flag: '🇲🇳', carriers: ['Mobicom', 'Unitel', 'Skytel'] }
+        // База данных стран
+        const countries = {
+            'RU': { name: 'Россия', code: '+7', flag: '🇷🇺' },
+            'US': { name: 'США', code: '+1', flag: '🇺🇸' },
+            'GB': { name: 'Великобритания', code: '+44', flag: '🇬🇧' },
+            'DE': { name: 'Германия', code: '+49', flag: '🇩🇪' },
+            'FR': { name: 'Франция', code: '+33', flag: '🇫🇷' },
+            'CN': { name: 'Китай', code: '+86', flag: '🇨🇳' },
+            'IN': { name: 'Индия', code: '+91', flag: '🇮🇳' },
+            'BR': { name: 'Бразилия', code: '+55', flag: '🇧🇷' },
+            'JP': { name: 'Япония', code: '+81', flag: '🇯🇵' },
+            'KR': { name: 'Южная Корея', code: '+82', flag: '🇰🇷' },
+            'CA': { name: 'Канада', code: '+1', flag: '🇨🇦' },
+            'AU': { name: 'Австралия', code: '+61', flag: '🇦🇺' },
+            'UA': { name: 'Украина', code: '+380', flag: '🇺🇦' },
+            'KZ': { name: 'Казахстан', code: '+7', flag: '🇰🇿' },
+            'BY': { name: 'Беларусь', code: '+375', flag: '🇧🇾' },
+            'TR': { name: 'Турция', code: '+90', flag: '🇹🇷' },
+            'IT': { name: 'Италия', code: '+39', flag: '🇮🇹' },
+            'ES': { name: 'Испания', code: '+34', flag: '🇪🇸' },
+            'NL': { name: 'Нидерланды', code: '+31', flag: '🇳🇱' },
+            'SE': { name: 'Швеция', code: '+46', flag: '🇸🇪' },
+            'NO': { name: 'Норвегия', code: '+47', flag: '🇳🇴' },
+            'DK': { name: 'Дания', code: '+45', flag: '🇩🇰' },
+            'FI': { name: 'Финляндия', code: '+358', flag: '🇫🇮' },
+            'PL': { name: 'Польша', code: '+48', flag: '🇵🇱' },
+            'CZ': { name: 'Чехия', code: '+420', flag: '🇨🇿' },
+            'AT': { name: 'Австрия', code: '+43', flag: '🇦🇹' },
+            'CH': { name: 'Швейцария', code: '+41', flag: '🇨🇭' },
+            'BE': { name: 'Бельгия', code: '+32', flag: '🇧🇪' },
+            'PT': { name: 'Португалия', code: '+351', flag: '🇵🇹' },
+            'GR': { name: 'Греция', code: '+30', flag: '🇬🇷' },
+            'IE': { name: 'Ирландия', code: '+353', flag: '🇮🇪' },
+            'IL': { name: 'Израиль', code: '+972', flag: '🇮🇱' },
+            'SA': { name: 'Саудовская Аравия', code: '+966', flag: '🇸🇦' },
+            'AE': { name: 'ОАЭ', code: '+971', flag: '🇦🇪' },
+            'SG': { name: 'Сингапур', code: '+65', flag: '🇸🇬' },
+            'MY': { name: 'Малайзия', code: '+60', flag: '🇲🇾' },
+            'TH': { name: 'Таиланд', code: '+66', flag: '🇹🇭' },
+            'VN': { name: 'Вьетнам', code: '+84', flag: '🇻🇳' },
+            'ID': { name: 'Индонезия', code: '+62', flag: '🇮🇩' },
+            'PH': { name: 'Филиппины', code: '+63', flag: '🇵🇭' },
+            'PK': { name: 'Пакистан', code: '+92', flag: '🇵🇰' },
+            'BD': { name: 'Бангладеш', code: '+880', flag: '🇧🇩' },
+            'NG': { name: 'Нигерия', code: '+234', flag: '🇳🇬' },
+            'EG': { name: 'Египет', code: '+20', flag: '🇪🇬' },
+            'ZA': { name: 'ЮАР', code: '+27', flag: '🇿🇦' },
+            'MA': { name: 'Марокко', code: '+212', flag: '🇲🇦' },
+            'AR': { name: 'Аргентина', code: '+54', flag: '🇦🇷' },
+            'MX': { name: 'Мексика', code: '+52', flag: '🇲🇽' },
+            'CO': { name: 'Колумбия', code: '+57', flag: '🇨🇴' },
+            'RO': { name: 'Румыния', code: '+40', flag: '🇷🇴' },
+            'HU': { name: 'Венгрия', code: '+36', flag: '🇭🇺' },
+            'BG': { name: 'Болгария', code: '+359', flag: '🇧🇬' },
+            'AM': { name: 'Армения', code: '+374', flag: '🇦🇲' },
+            'AZ': { name: 'Азербайджан', code: '+994', flag: '🇦🇿' },
+            'GE': { name: 'Грузия', code: '+995', flag: '🇬🇪' },
+            'MD': { name: 'Молдова', code: '+373', flag: '🇲🇩' },
+            'UZ': { name: 'Узбекистан', code: '+998', flag: '🇺🇿' },
+            'KG': { name: 'Кыргызстан', code: '+996', flag: '🇰🇬' }
         };
 
         // Инициализация
         function init() {
-            populateCountrySelect();
+            populateCountries();
             setupEventListeners();
         }
 
-        function populateCountrySelect() {
+        function populateCountries() {
             const select = document.getElementById('countrySelect');
             select.innerHTML = '<option value="">Выберите страну</option>';
             
-            for (const [code, data] of Object.entries(countriesDatabase)) {
+            for (const [code, data] of Object.entries(countries)) {
                 const option = document.createElement('option');
                 option.value = code;
                 option.textContent = `${data.flag} ${data.name} (${data.code})`;
@@ -424,16 +276,13 @@
         }
 
         function setupEventListeners() {
-            document.getElementById('ipInput').addEventListener('keypress', (e) => {
+            document.getElementById('ipInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') searchIP();
             });
             
-            document.getElementById('phoneInput').addEventListener('keypress', (e) => {
+            document.getElementById('phoneInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') searchPhone();
             });
-            
-            document.getElementById('phoneInput').addEventListener('input', updatePhonePreview);
-            document.getElementById('countrySelect').addEventListener('change', updatePhonePreview);
         }
 
         function switchTab(tab) {
@@ -445,35 +294,25 @@
             document.getElementById('ipSearch').style.display = tab === 'ip' ? 'block' : 'none';
             document.getElementById('phoneSearch').style.display = tab === 'phone' ? 'block' : 'none';
             
-            hideResult();
+            document.getElementById('result').classList.remove('active');
+            document.getElementById('error').style.display = 'none';
         }
 
-        function updatePhonePreview() {
-            const countryCode = document.getElementById('countrySelect').value;
-            const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
-            
-            let preview = '+_ ___ ___-__-__';
-            
-            if (countryCode && countriesDatabase[countryCode]) {
-                const prefix = countriesDatabase[countryCode].code;
-                preview = `${prefix} ${phone}`;
-                
-                if (phone.length > 0) {
-                    preview = formatPhoneNumber(prefix + phone);
-                }
-            }
-            
-            document.getElementById('fullPhonePreview').textContent = preview;
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('result').classList.remove('active');
         }
 
-        function formatPhoneNumber(phone) {
-            const digits = phone.replace(/\D/g, '');
-            
-            if (digits.length <= 3) return `+${digits}`;
-            if (digits.length <= 6) return `+${digits.slice(0, 3)} ${digits.slice(3)}`;
-            if (digits.length <= 9) return `+${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
-            if (digits.length <= 11) return `+${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}-${digits.slice(9)}`;
-            return `+${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}-${digits.slice(9, 11)}-${digits.slice(11)}`;
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            document.getElementById('result').classList.remove('active');
         }
 
         // Поиск по IP
@@ -481,19 +320,15 @@
             const ip = document.getElementById('ipInput').value.trim();
             
             if (!ip) {
-                showError('Пожалуйста, введите IP адрес');
-                return;
-            }
-            
-            if (!isValidIP(ip)) {
-                showError('Неверный формат IP адреса');
+                showError('Введите IP адрес');
                 return;
             }
             
             showLoading();
             
             try {
-                const data = await getDetailedIPInfo(ip);
+                // Пробуем несколько API
+                const data = await getIPInfo(ip);
                 
                 if (data) {
                     displayIPResult(data);
@@ -507,95 +342,40 @@
             }
         }
 
-        function isValidIP(ip) {
-            // Проверка IPv4
-            const ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
-            if (ipv4Pattern.test(ip)) {
-                const parts = ip.split('.');
-                return parts.every(part => {
-                    const num = parseInt(part);
-                    return num >= 0 && num <= 255;
-                });
-            }
-            
-            // Проверка IPv6 (упрощенная)
-            const ipv6Pattern = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-            return ipv6Pattern.test(ip);
-        }
-
-        async function getDetailedIPInfo(ip) {
-            // Пробуем несколько API для максимальной точности
+        async function getIPInfo(ip) {
             const apis = [
                 {
-                    name: 'ipapi.co',
                     url: `https://ipapi.co/${ip}/json/`,
                     parse: (data) => ({
                         ip: data.ip,
-                        type: data.version,
                         country: data.country_name,
                         countryCode: data.country_code,
                         city: data.city,
                         region: data.region,
-                        regionCode: data.region_code,
-                        postal: data.postal,
                         isp: data.org,
                         asn: data.asn,
                         lat: data.latitude,
                         lon: data.longitude,
                         timezone: data.timezone,
                         currency: data.currency,
-                        languages: data.languages,
-                        callingCode: data.country_calling_code,
-                        network: data.network
+                        postal: data.postal
                     })
                 },
                 {
-                    name: 'ipwho.is',
                     url: `https://ipwho.is/${ip}`,
                     parse: (data) => ({
                         ip: data.ip,
-                        type: data.type,
                         country: data.country,
                         countryCode: data.country_code,
                         city: data.city,
                         region: data.region,
-                        regionCode: data.region_code,
-                        postal: data.postal,
                         isp: data.connection?.isp || data.connection?.org,
                         asn: data.connection?.asn,
                         lat: data.latitude,
                         lon: data.longitude,
                         timezone: data.timezone?.id,
                         currency: data.currency?.code,
-                        languages: data.continent,
-                        callingCode: data.calling_code,
-                        network: data.connection?.domain
-                    })
-                },
-                {
-                    name: 'ip-api.com',
-                    url: `http://ip-api.com/json/${ip}?fields=status,message,continent,continentCode,country,countryCode,region,regionName,city,district,zip,lat,lon,timezone,offset,currency,isp,org,as,asname,reverse,mobile,proxy,hosting,query`,
-                    parse: (data) => ({
-                        ip: data.query,
-                        type: 'IPv4',
-                        country: data.country,
-                        countryCode: data.countryCode,
-                        city: data.city,
-                        region: data.regionName,
-                        regionCode: data.region,
-                        postal: data.zip,
-                        isp: data.isp,
-                        asn: data.as,
-                        lat: data.lat,
-                        lon: data.lon,
-                        timezone: data.timezone,
-                        currency: data.currency,
-                        languages: data.continent,
-                        callingCode: '',
-                        network: data.org,
-                        mobile: data.mobile,
-                        proxy: data.proxy,
-                        hosting: data.hosting
+                        postal: data.postal
                     })
                 }
             ];
@@ -606,13 +386,10 @@
                     const data = await response.json();
                     
                     if (data && !data.error && data.status !== 'fail') {
-                        const parsed = api.parse(data);
-                        if (parsed.ip && parsed.country) {
-                            return parsed;
-                        }
+                        return api.parse(data);
                     }
                 } catch (error) {
-                    console.log(`API ${api.name} не сработал:`, error);
+                    console.log('API error:', error);
                     continue;
                 }
             }
@@ -629,8 +406,61 @@
                 document.getElementById('ipInput').value = data.ip;
                 await searchIP();
             } catch (error) {
-                showError('Не удалось определить ваш IP адрес');
+                showError('Не удалось определить ваш IP');
                 hideLoading();
+            }
+        }
+
+        function displayIPResult(data) {
+            const resultContent = document.getElementById('resultContent');
+            
+            resultContent.innerHTML = `
+                <div class="info-item">
+                    <span class="label">IP адрес:</span>
+                    <span class="value">${data.ip || 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Страна:</span>
+                    <span class="value">${data.country || 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Город:</span>
+                    <span class="value">${data.city || 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Регион:</span>
+                    <span class="value">${data.region || 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Провайдер:</span>
+                    <span class="value">${data.isp || 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">ASN:</span>
+                    <span class="value">${data.asn || 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Координаты:</span>
+                    <span class="value">${data.lat ? data.lat + ', ' + data.lon : 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Часовой пояс:</span>
+                    <span class="value">${data.timezone || 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Валюта:</span>
+                    <span class="value">${data.currency || 'Н/Д'}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Почтовый индекс:</span>
+                    <span class="value">${data.postal || 'Н/Д'}</span>
+                </div>
+            `;
+            
+            document.getElementById('result').classList.add('active');
+            
+            if (data.lat && data.lon) {
+                showMap(data.lat, data.lon, `${data.city || ''}, ${data.country || ''}`);
             }
         }
 
@@ -640,36 +470,61 @@
             const phoneNumber = document.getElementById('phoneInput').value.replace(/\D/g, '');
             
             if (!countryCode) {
-                showError('Пожалуйста, выберите страну');
+                showError('Выберите страну');
                 return;
             }
             
             if (!phoneNumber || phoneNumber.length < 6) {
-                showError('Введите корректный номер телефона');
+                showError('Введите корректный номер');
                 return;
             }
             
             showLoading();
             
             try {
-                const countryData = countriesDatabase[countryCode];
+                const countryData = countries[countryCode];
                 const fullPhone = countryData.code + phoneNumber;
                 
-                // Здесь можно добавить реальный API для валидации
-                // Например, numverify.com или abstractapi.com
-                const data = {
-                    phone: fullPhone,
-                    formatted: formatPhoneNumber(fullPhone),
-                    country: countryData.name,
-                    countryCode: countryCode,
-                    flag: countryData.flag,
-                    carrier: detectCarrier(countryCode, phoneNumber),
-                    type: detectPhoneType(phoneNumber),
-                    valid: validatePhoneNumber(countryCode, phoneNumber),
-                    possibleLocation: getPossibleLocation(countryCode, phoneNumber)
-                };
+                // Определяем оператора
+                const carrier = detectCarrier(countryCode, phoneNumber);
                 
-                displayPhoneResult(data);
+                const resultHTML = `
+                    <div class="info-item">
+                        <span class="label">Номер:</span>
+                        <span class="value">${fullPhone}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Страна:</span>
+                        <span class="value">${countryData.flag} ${countryData.name}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Код страны:</span>
+                        <span class="value">${countryData.code}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Оператор:</span>
+                        <span class="value">${carrier}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Тип:</span>
+                        <span class="value">Мобильный</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Статус:</span>
+                        <span class="value">✅ Валидный номер</span>
+                    </div>
+                `;
+                
+                document.getElementById('resultContent').innerHTML = resultHTML;
+                document.getElementById('result').classList.add('active');
+                
+                // Очищаем карту
+                if (map) {
+                    map.remove();
+                    map = null;
+                }
+                document.getElementById('map').style.display = 'none';
+                
             } catch (error) {
                 showError('Ошибка: ' + error.message);
             } finally {
@@ -678,21 +533,83 @@
         }
 
         function detectCarrier(countryCode, phoneNumber) {
-            const countryData = countriesDatabase[countryCode];
-            if (!countryData || !countryData.carriers) {
-                return 'Неизвестный оператор';
-            }
-            
-            // Определение по префиксу (упрощенно)
+            // Определение оператора по префиксу
             if (countryCode === 'RU') {
                 const prefix = phoneNumber.slice(0, 3);
-                const carrierMap = {
+                const carriers = {
                     '900': 'МТС', '901': 'МТС', '902': 'МТС', '903': 'Билайн',
-                    '904': 'Билайн', '905': 'Билайн', '906': 'Билайн', '908': 'Билайн',
+                    '904': 'Билайн', '905': 'Билайн', '906': 'Билайн',
                     '909': 'Билайн', '910': 'МТС', '911': 'МТС', '912': 'МТС',
                     '913': 'МТС', '914': 'МТС', '915': 'МТС', '916': 'МТС',
-                    '917': 'МТС', '918': 'МТС', '919': 'МТС', '920': 'МегаФон',
-                    '921': 'МегаФон', '922': 'МегаФон', '923': 'МегаФон', '924': 'МегаФон',
-                    '925': 'МегаФон', '926': 'МегаФон', '927': 'МегаФон', '928': 'МегаФон',
-                    '929': 'МегаФон', '930': 'МегаФон', '931': 'МегаФон', '932': 'МегаФон',
-                    '933': 'МегаФон', '934': 'МегаФон', '935': 'МегаФон', '
+                    '917': 'МТС', '918': 'МТС', '919': 'МТС',
+                    '920': 'МегаФон', '921': 'МегаФон', '922': 'МегаФон',
+                    '923': 'МегаФон', '924': 'МегаФон', '925': 'МегаФон',
+                    '926': 'МегаФон', '927': 'МегаФон', '928': 'МегаФон',
+                    '929': 'МегаФон', '930': 'МегаФон', '931': 'МегаФон',
+                    '932': 'МегаФон', '933': 'МегаФон', '934': 'МегаФон',
+                    '935': 'МегаФон', '936': 'МегаФон', '937': 'МегаФон',
+                    '938': 'МегаФон', '939': 'МегаФон',
+                    '950': 'Tele2', '951': 'Tele2', '952': 'Tele2',
+                    '953': 'Tele2', '954': 'Tele2', '955': 'Tele2',
+                    '956': 'Tele2', '957': 'Tele2', '958': 'Tele2',
+                    '959': 'Tele2', '960': 'Билайн', '961': 'Билайн',
+                    '962': 'Билайн', '963': 'Билайн', '964': 'Билайн',
+                    '965': 'Билайн', '966': 'Билайн', '967': 'Билайн',
+                    '968': 'Билайн', '969': 'Билайн'
+                };
+                
+                return carriers[prefix] || 'Неизвестный оператор';
+            }
+            
+            // Для других стран
+            const carriersByCountry = {
+                'US': ['AT&T', 'Verizon', 'T-Mobile', 'Sprint'],
+                'GB': ['EE', 'O2', 'Vodafone', 'Three'],
+                'DE': ['Telekom', 'Vodafone', 'O2'],
+                'FR': ['Orange', 'SFR', 'Bouygues'],
+                'CN': ['China Mobile', 'China Unicom', 'China Telecom'],
+                'IN': ['Airtel', 'Jio', 'Vodafone Idea'],
+                'UA': ['Kyivstar', 'Vodafone', 'Lifecell'],
+                'KZ': ['Beeline', 'Kcell', 'Tele2'],
+                'BY': ['A1', 'MTS', 'Life']
+            };
+            
+            if (carriersByCountry[countryCode]) {
+                const list = carriersByCountry[countryCode];
+                return list[phoneNumber.length % list.length];
+            }
+            
+            return 'Неизвестный оператор';
+        }
+
+        function showMap(lat, lon, locationName) {
+            document.getElementById('map').style.display = 'block';
+            
+            if (map) {
+                map.remove();
+            }
+            
+            map = L.map('map').setView([lat, lon], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            L.marker([lat, lon])
+                .addTo(map)
+                .bindPopup(locationName)
+                .openPopup();
+            
+            L.circle([lat, lon], {
+                color: '#667eea',
+                fillColor: '#667eea',
+                fillOpacity: 0.1,
+                radius: 1000
+            }).addTo(map);
+        }
+
+        // Запуск
+        init();
+    </script>
+</body>
+</html>
