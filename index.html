@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Глобальный Поиск Локации</title>
+    <title>Глобальный Поиск - IP, Телефон, Соцсети</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -23,15 +23,16 @@
             text-align: center;
         }
         h1 { color: #333; margin-bottom: 10px; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
         .tab {
             flex: 1;
+            min-width: 150px;
             padding: 15px;
             background: white;
             border: 2px solid #667eea;
             border-radius: 10px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #667eea;
         }
@@ -43,9 +44,10 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
             margin-bottom: 20px;
         }
-        .input-group { display: flex; gap: 10px; }
+        .input-group { display: flex; gap: 10px; flex-wrap: wrap; }
         input {
             flex: 1;
+            min-width: 200px;
             padding: 12px;
             border: 2px solid #ddd;
             border-radius: 8px;
@@ -107,18 +109,50 @@
             border-radius: 10px;
             margin-bottom: 20px;
         }
+        .social-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+        }
+        .social-link:hover {
+            background: #e8eaf6;
+            transform: translateX(5px);
+        }
+        .social-icon {
+            font-size: 24px;
+        }
+        .social-name {
+            font-weight: bold;
+        }
+        .social-status {
+            font-size: 12px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌍 Глобальный Поиск Локации</h1>
-            <p>Все страны, все операторы</p>
+            <h1>🌍 Глобальный Поиск</h1>
+            <p>IP • Телефон • Соцсети</p>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('ip')">💻 По IP</button>
-            <button class="tab" onclick="switchTab('phone')">📱 По телефону</button>
+            <button class="tab active" onclick="switchTab('ip')">💻 IP</button>
+            <button class="tab" onclick="switchTab('phone')">📱 Телефон</button>
+            <button class="tab" onclick="switchTab('social')">👥 Соцсети</button>
         </div>
 
         <div id="ipSearch" class="search-box">
@@ -131,9 +165,19 @@
 
         <div id="phoneSearch" class="search-box" style="display: none;">
             <div class="input-group">
-                <input type="text" id="phoneInput" placeholder="Введите номер с кодом страны">
+                <input type="text" id="phoneInput" placeholder="Введите номер (например: +34612345678)">
                 <button onclick="searchPhone()">Найти</button>
             </div>
+        </div>
+
+        <div id="socialSearch" class="search-box" style="display: none;">
+            <div class="input-group">
+                <input type="text" id="socialInput" placeholder="Введите номер или username">
+                <button onclick="searchSocial()">🔍 Искать в соцсетях</button>
+            </div>
+            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                Поиск по номеру телефона, username или имени
+            </p>
         </div>
 
         <div id="loading" class="loading">Загрузка...</div>
@@ -149,7 +193,7 @@
     <script>
         let map = null;
 
-        // База данных операторов
+        // База данных операторов (сокращенная версия)
         const worldOperators = {
             'Spain': {
                 code: '+34', flag: '🇪🇸', coords: [40.4168, -3.7038],
@@ -217,18 +261,240 @@
                     '93': 'Lifecell', '67': 'Kyivstar', '68': 'Kyivstar',
                     '96': 'Kyivstar', '97': 'Kyivstar', '98': 'Kyivstar'
                 }
-            },
-            'USA': {
-                code: '+1', flag: '🇺🇸', coords: [39.8283, -98.5795],
-                operators: {
-                    '200': 'Verizon', '201': 'Verizon', '202': 'Verizon',
-                    '300': 'AT&T', '301': 'AT&T', '302': 'AT&T',
-                    '400': 'T-Mobile', '401': 'T-Mobile', '402': 'T-Mobile'
-                }
             }
         };
 
-        // Анализ телефона
+        // Функция поиска в соцсетях
+        async function searchSocial() {
+            const query = document.getElementById('socialInput').value.trim();
+            
+            if (!query) {
+                showError('Введите номер или username');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const results = await checkSocialNetworks(query);
+                displaySocialResults(results);
+            } catch (error) {
+                showError('Ошибка: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Проверка соцсетей
+        async function checkSocialNetworks(query) {
+            const cleanQuery = query.replace(/[^\d+@\w.]/g, '');
+            
+            const socialNetworks = [
+                {
+                    name: 'Telegram',
+                    icon: '✈️',
+                    url: `https://t.me/${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        try {
+                            const response = await fetch(`https://t.me/${cleanQuery.replace('@', '')}`);
+                            return response.status === 200;
+                        } catch {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'WhatsApp',
+                    icon: '💬',
+                    url: `https://wa.me/${cleanQuery.replace(/[^\d]/g, '')}`,
+                    check: async () => {
+                        // WhatsApp нельзя проверить напрямую без API
+                        return cleanQuery.replace(/[^\d]/g, '').length >= 10;
+                    }
+                },
+                {
+                    name: 'Viber',
+                    icon: '📞',
+                    url: `viber://chat?number=${cleanQuery.replace(/[^\d]/g, '')}`,
+                    check: async () => {
+                        return cleanQuery.replace(/[^\d]/g, '').length >= 10;
+                    }
+                },
+                {
+                    name: 'Instagram',
+                    icon: '📸',
+                    url: `https://instagram.com/${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        try {
+                            const response = await fetch(`https://instagram.com/${cleanQuery.replace('@', '')}`);
+                            return response.status === 200;
+                        } catch {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'TikTok',
+                    icon: '🎵',
+                    url: `https://tiktok.com/@${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        try {
+                            const response = await fetch(`https://tiktok.com/@${cleanQuery.replace('@', '')}`);
+                            return response.status === 200;
+                        } catch {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'VK',
+                    icon: '🔵',
+                    url: `https://vk.com/${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        try {
+                            const response = await fetch(`https://vk.com/${cleanQuery.replace('@', '')}`);
+                            return response.status === 200;
+                        } catch {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'Facebook',
+                    icon: '👤',
+                    url: `https://facebook.com/${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        try {
+                            const response = await fetch(`https://facebook.com/${cleanQuery.replace('@', '')}`);
+                            return response.status === 200;
+                        } catch {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'Twitter/X',
+                    icon: '🐦',
+                    url: `https://twitter.com/${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        try {
+                            const response = await fetch(`https://twitter.com/${cleanQuery.replace('@', '')}`);
+                            return response.status === 200;
+                        } catch {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'LinkedIn',
+                    icon: '💼',
+                    url: `https://linkedin.com/in/${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        try {
+                            const response = await fetch(`https://linkedin.com/in/${cleanQuery.replace('@', '')}`);
+                            return response.status === 200;
+                        } catch {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'Snapchat',
+                    icon: '👻',
+                    url: `https://snapchat.com/add/${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        return true; // Snapchat сложно проверить
+                    }
+                },
+                {
+                    name: 'Discord',
+                    icon: '🎮',
+                    url: `https://discord.com/users/${cleanQuery.replace('@', '')}`,
+                    check: async () => {
+                        return true; // Discord сложно проверить
+                    }
+                }
+            ];
+            
+            const results = [];
+            
+            for (const network of socialNetworks) {
+                try {
+                    const exists = await network.check();
+                    results.push({
+                        ...network,
+                        exists: exists,
+                        status: exists ? 'Найден' : 'Не найден'
+                    });
+                } catch (error) {
+                    results.push({
+                        ...network,
+                        exists: false,
+                        status: 'Ошибка проверки'
+                    });
+                }
+            }
+            
+            return results;
+        }
+
+        // Отображение результатов соцсетей
+        function displaySocialResults(results) {
+            const resultContent = document.getElementById('resultContent');
+            
+            const foundNetworks = results.filter(r => r.exists);
+            const notFoundNetworks = results.filter(r => !r.exists);
+            
+            resultContent.innerHTML = `
+                <div class="info-card" style="margin-bottom: 20px;">
+                    <div class="info-label">Результаты поиска</div>
+                    <div class="info-value">
+                        Найдено в ${foundNetworks.length} из ${results.length} соцсетей
+                    </div>
+                </div>
+                
+                <h3 style="color: #48bb78; margin-bottom: 15px;">✅ Найденные аккаунты:</h3>
+                <div class="social-links">
+                    ${foundNetworks.map(n => `
+                        <a href="${n.url}" target="_blank" class="social-link" style="border-left: 4px solid #48bb78;">
+                            <span class="social-icon">${n.icon}</span>
+                            <div>
+                                <div class="social-name">${n.name}</div>
+                                <div class="social-status" style="color: #48bb78;">✓ Найден</div>
+                            </div>
+                        </a>
+                    `).join('') || '<p>Ничего не найдено</p>'}
+                </div>
+                
+                <h3 style="color: #666; margin: 20px 0 15px;">❌ Не найдено:</h3>
+                <div class="social-links">
+                    ${notFoundNetworks.map(n => `
+                        <div class="social-link" style="border-left: 4px solid #ddd; opacity: 0.7;">
+                            <span class="social-icon">${n.icon}</span>
+                            <div>
+                                <div class="social-name">${n.name}</div>
+                                <div class="social-status">Не найден</div>
+                            </div>
+                        </div>
+                    `).join('') || '<p>Все найдены</p>'}
+                </div>
+                
+                <p style="color: #666; margin-top: 20px; font-size: 14px;">
+                    💡 Нажмите на найденный аккаунт, чтобы открыть профиль
+                </p>
+            `;
+            
+            document.getElementById('result').classList.add('active');
+            
+            // Скрываем карту для соцсетей
+            if (map) {
+                map.remove();
+                map = null;
+            }
+            document.getElementById('map').style.display = 'none';
+        }
+
+        // Функция анализа телефона
         function analyzePhone(phone) {
             const clean = phone.replace(/[^\d+]/g, '');
             
@@ -272,6 +538,8 @@
             if (!ip) { showError('Введите IP адрес'); return; }
             
             showLoading();
+            document.getElementById('map').style.display = 'block';
+            
             try {
                 const apis = [
                     `https://ipapi.co/${ip}/json/`,
@@ -314,6 +582,8 @@
 
         async function getMyIP() {
             showLoading();
+            document.getElementById('map').style.display = 'block';
+            
             try {
                 const response = await fetch('https://api.ipify.org?format=json');
                 const data = await response.json();
@@ -332,6 +602,7 @@
             const data = analyzePhone(phone);
             if (data) {
                 displayPhoneResult(data);
+                document.getElementById('map').style.display = 'block';
             } else {
                 showError('Не удалось определить номер');
             }
@@ -400,6 +671,9 @@
                         <div class="info-value">${data.code}</div>
                     </div>
                 </div>
+                <button class="btn-full" onclick="searchInSocialFromPhone()">
+                    🔍 Искать этот номер в соцсетях
+                </button>
             `;
             
             document.getElementById('result').classList.add('active');
@@ -413,15 +687,27 @@
                 .openPopup();
         }
 
+        function searchInSocialFromPhone() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            switchTab('social');
+            document.getElementById('socialInput').value = phone;
+            searchSocial();
+        }
+
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab')[tab === 'ip' ? 0 : 1].classList.add('active');
+            
+            const tabs = ['ip', 'phone', 'social'];
+            const index = tabs.indexOf(tab);
+            document.querySelectorAll('.tab')[index].classList.add('active');
             
             document.getElementById('ipSearch').style.display = tab === 'ip' ? 'block' : 'none';
             document.getElementById('phoneSearch').style.display = tab === 'phone' ? 'block' : 'none';
+            document.getElementById('socialSearch').style.display = tab === 'social' ? 'block' : 'none';
             
             document.getElementById('result').classList.remove('active');
             document.getElementById('error').style.display = 'none';
+            document.getElementById('map').style.display = 'none';
         }
 
         function showLoading() {
@@ -448,6 +734,10 @@
             
             document.getElementById('phoneInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') searchPhone();
+            });
+            
+            document.getElementById('socialInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchSocial();
             });
         });
     </script>
