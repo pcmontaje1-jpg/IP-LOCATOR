@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Точный Поиск Локации</title>
+    <title>Максимально Подробный Поиск Локации</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * {
@@ -18,7 +18,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
         }
         .header {
@@ -70,19 +70,16 @@
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
-            flex-wrap: wrap;
         }
-        input, select {
+        input {
             flex: 1;
-            min-width: 200px;
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 16px;
             outline: none;
-            transition: border-color 0.3s;
         }
-        input:focus, select:focus {
+        input:focus {
             border-color: #667eea;
         }
         button {
@@ -95,6 +92,7 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
+            white-space: nowrap;
         }
         button:hover {
             background: #5a67d8;
@@ -127,11 +125,20 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 1.3em;
+            color: #667eea;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 15px;
-            margin-bottom: 20px;
         }
         .info-card {
             background: #f8f9fa;
@@ -150,6 +157,9 @@
             font-size: 16px;
             font-weight: bold;
             color: #333;
+        }
+        .info-value.highlight {
+            color: #667eea;
         }
         .map-container {
             height: 400px;
@@ -188,62 +198,70 @@
             margin-bottom: 20px;
             border-left: 4px solid #dc3545;
         }
-        .accuracy-badge {
+        .badge {
             display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
+            padding: 4px 10px;
+            border-radius: 15px;
             font-size: 12px;
             font-weight: bold;
         }
-        .accuracy-high {
+        .badge-green {
             background: #d4edda;
             color: #155724;
         }
-        .accuracy-medium {
+        .badge-yellow {
             background: #fff3cd;
             color: #856404;
         }
-        .accuracy-low {
+        .badge-red {
             background: #f8d7da;
             color: #721c24;
+        }
+        .whois-info {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌍 Точный Поиск Локации</h1>
-            <p style="color: #666;">Реальные данные с картами для IP и телефонов</p>
+            <h1>🔍 Максимально Подробный Поиск</h1>
+            <p style="color: #666;">Вся доступная информация: регистрация, оператор, местоположение</p>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('ip')">💻 Поиск по IP</button>
-            <button class="tab" onclick="switchTab('phone')">📱 Поиск по телефону</button>
+            <button class="tab active" onclick="switchTab('ip')">💻 Подробно по IP</button>
+            <button class="tab" onclick="switchTab('phone')">📱 Подробно по телефону</button>
         </div>
 
         <!-- IP Search -->
         <div id="ipSearch" class="search-box">
             <div class="input-group">
                 <input type="text" id="ipInput" placeholder="Введите IP адрес (например: 8.8.8.8)">
-                <button onclick="searchIP()">🔍 Найти</button>
+                <button onclick="searchIP()">🔍 Искать всё</button>
             </div>
-            <button class="btn-full" onclick="getMyIP()">📍 Определить мой IP и показать на карте</button>
+            <button class="btn-full" onclick="getMyIP()">📍 Определить мой IP</button>
         </div>
 
         <!-- Phone Search -->
         <div id="phoneSearch" class="search-box" style="display: none;">
             <div class="input-group">
-                <input type="text" id="phoneInput" placeholder="Введите номер с кодом страны (например: +79991234567)">
-                <button onclick="searchPhone()">🔍 Найти</button>
+                <input type="text" id="phoneInput" placeholder="Введите номер (например: +79991234567)">
+                <button onclick="searchPhone()">🔍 Искать всё</button>
             </div>
-            <p style="color: #666; font-size: 14px; margin-top: 10px;">
-                💡 Введите полный номер с кодом страны для точного определения
-            </p>
         </div>
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <p>Получаем точные данные...</p>
+            <p>Собираем всю доступную информацию...</p>
         </div>
 
         <div id="error" class="error"></div>
@@ -275,20 +293,17 @@
             
             map.setView([lat, lon], 13);
             
-            // Очищаем предыдущие маркеры
             map.eachLayer((layer) => {
                 if (layer instanceof L.Marker || layer instanceof L.Circle) {
                     map.removeLayer(layer);
                 }
             });
             
-            // Добавляем маркер
             L.marker([lat, lon])
                 .addTo(map)
                 .bindPopup(label)
                 .openPopup();
             
-            // Добавляем круг точности
             L.circle([lat, lon], {
                 color: '#667eea',
                 fillColor: '#667eea',
@@ -339,32 +354,45 @@
             const ip = document.getElementById('ipInput').value.trim();
             
             if (!ip) {
-                showError('Пожалуйста, введите IP адрес');
+                showError('Введите IP адрес');
                 return;
             }
             
             showLoading();
             
             try {
-                const data = await getIPData(ip);
+                const data = await getFullIPData(ip);
                 
-                if (data && data.lat && data.lon) {
+                if (data) {
                     displayIPResult(data);
                 } else {
-                    showError('Не удалось получить точные данные об этом IP');
+                    showError('Не удалось получить данные об этом IP');
                 }
             } catch (error) {
-                showError('Ошибка при получении данных: ' + error.message);
+                showError('Ошибка: ' + error.message);
             } finally {
                 hideLoading();
             }
         }
 
-        async function getIPData(ip) {
-            // Используем несколько API для максимальной точности
+        async function getFullIPData(ip) {
+            // Получаем данные с разных API
+            const [geoData, whoisData] = await Promise.all([
+                getIPGeoData(ip),
+                getIPWhoisData(ip)
+            ]);
+            
+            if (!geoData) return null;
+            
+            return {
+                ...geoData,
+                whois: whoisData
+            };
+        }
+
+        async function getIPGeoData(ip) {
             const apis = [
                 {
-                    name: 'ipapi.co',
                     url: `https://ipapi.co/${ip}/json/`,
                     parse: (data) => ({
                         ip: data.ip,
@@ -380,11 +408,12 @@
                         timezone: data.timezone,
                         currency: data.currency,
                         languages: data.languages,
-                        callingCode: data.country_calling_code
+                        callingCode: data.country_calling_code,
+                        network: data.network,
+                        version: data.version
                     })
                 },
                 {
-                    name: 'ipwho.is',
                     url: `https://ipwho.is/${ip}`,
                     parse: (data) => ({
                         ip: data.ip,
@@ -400,12 +429,13 @@
                         timezone: data.timezone?.id,
                         currency: data.currency?.code,
                         languages: data.continent,
-                        callingCode: data.calling_code
+                        callingCode: data.calling_code,
+                        network: data.connection?.domain,
+                        version: data.type
                     })
                 },
                 {
-                    name: 'ip-api.com',
-                    url: `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query`,
+                    url: `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,reverse,mobile,proxy,hosting,query`,
                     parse: (data) => ({
                         ip: data.query,
                         country: data.country,
@@ -415,12 +445,16 @@
                         postal: data.zip,
                         isp: data.isp,
                         asn: data.as,
+                        asname: data.asname,
+                        reverse: data.reverse,
                         lat: data.lat,
                         lon: data.lon,
                         timezone: data.timezone,
-                        currency: '',
-                        languages: '',
-                        callingCode: ''
+                        mobile: data.mobile,
+                        proxy: data.proxy,
+                        hosting: data.hosting,
+                        network: data.org,
+                        version: 'IPv4'
                     })
                 }
             ];
@@ -434,12 +468,38 @@
                         return api.parse(data);
                     }
                 } catch (error) {
-                    console.log(`API ${api.name} error:`, error);
+                    console.log(`API error:`, error);
                     continue;
                 }
             }
             
             return null;
+        }
+
+        async function getIPWhoisData(ip) {
+            try {
+                // Используем whois API
+                const response = await fetch(`https://rdap.org/ip/${ip}`);
+                const data = await response.json();
+                
+                return {
+                    name: data.name,
+                    handle: data.handle,
+                    type: data.type,
+                    startAddress: data.startAddress,
+                    endAddress: data.endAddress,
+                    registration: data.events?.find(e => e.eventAction === 'registration')?.eventDate,
+                    lastChanged: data.events?.find(e => e.eventAction === 'last changed')?.eventDate,
+                    entities: data.entities?.map(e => ({
+                        name: e.vcardArray?.[1]?.find(v => v[0] === 'fn')?.[3],
+                        role: e.roles?.[0],
+                        address: e.vcardArray?.[1]?.find(v => v[0] === 'adr')?.[1]?.label
+                    }))
+                };
+            } catch (error) {
+                console.log('WHOIS error:', error);
+                return null;
+            }
         }
 
         async function getMyIP() {
@@ -451,80 +511,115 @@
                 document.getElementById('ipInput').value = data.ip;
                 await searchIP();
             } catch (error) {
-                showError('Не удалось определить ваш IP адрес');
+                showError('Не удалось определить ваш IP');
                 hideLoading();
             }
         }
 
         function displayIPResult(data) {
-            const accuracy = determineAccuracy(data);
+            const whoisHTML = data.whois ? `
+                <div class="whois-info">
+                    <strong>📋 WHOIS Информация:</strong><br><br>
+                    ${data.whois.name ? `Имя сети: ${data.whois.name}<br>` : ''}
+                    ${data.whois.handle ? `Handle: ${data.whois.handle}<br>` : ''}
+                    ${data.whois.registration ? `📅 Зарегистрирован: ${new Date(data.whois.registration).toLocaleDateString('ru-RU')}<br>` : ''}
+                    ${data.whois.lastChanged ? `🔄 Последнее изменение: ${new Date(data.whois.lastChanged).toLocaleDateString('ru-RU')}<br>` : ''}
+                    ${data.whois.startAddress ? `Начальный IP: ${data.whois.startAddress}<br>` : ''}
+                    ${data.whois.endAddress ? `Конечный IP: ${data.whois.endAddress}<br>` : ''}
+                    ${data.whois.entities?.map(e => `
+                        ${e.name ? `<br>🏢 ${e.name} (${e.role || 'Неизвестная роль'})<br>` : ''}
+                        ${e.address ? `📍 Адрес: ${e.address}<br>` : ''}
+                    `).join('') || ''}
+                </div>
+            ` : '<div class="whois-info">WHOIS информация недоступна</div>';
             
             const resultHTML = `
-                <div class="info-grid">
-                    <div class="info-card">
-                        <div class="info-label">IP Адрес</div>
-                        <div class="info-value">${data.ip}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Страна</div>
-                        <div class="info-value">${getFlagEmoji(data.countryCode)} ${data.country}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Город</div>
-                        <div class="info-value">${data.city || 'Не определен'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Регион</div>
-                        <div class="info-value">${data.region || 'Не определен'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Провайдер (ISP)</div>
-                        <div class="info-value">${data.isp || 'Не определен'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">ASN</div>
-                        <div class="info-value">${data.asn || 'Не определен'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Координаты</div>
-                        <div class="info-value">${data.lat}, ${data.lon}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Часовой пояс</div>
-                        <div class="info-value">${data.timezone || 'Не определен'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Почтовый индекс</div>
-                        <div class="info-value">${data.postal || 'Не определен'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Валюта</div>
-                        <div class="info-value">${data.currency || 'Не определена'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Точность</div>
-                        <div class="info-value">
-                            <span class="accuracy-badge ${accuracy.class}">${accuracy.text}</span>
+                <div class="section">
+                    <h3 class="section-title">🌍 Географические данные</h3>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">IP Адрес</div>
+                            <div class="info-value">${data.ip}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Страна</div>
+                            <div class="info-value">${getFlagEmoji(data.countryCode)} ${data.country}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Город</div>
+                            <div class="info-value">${data.city || 'Не определен'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Регион</div>
+                            <div class="info-value">${data.region || 'Не определен'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Почтовый индекс</div>
+                            <div class="info-value">${data.postal || 'Не определен'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Координаты</div>
+                            <div class="info-value">${data.lat}, ${data.lon}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Часовой пояс</div>
+                            <div class="info-value">${data.timezone || 'Не определен'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Валюта</div>
+                            <div class="info-value">${data.currency || 'Не определена'}</div>
                         </div>
                     </div>
                 </div>
+
+                <div class="section">
+                    <h3 class="section-title">📡 Сетевая информация</h3>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">Провайдер (ISP)</div>
+                            <div class="info-value">${data.isp || 'Не определен'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">ASN</div>
+                            <div class="info-value">${data.asn || 'Не определен'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Сеть</div>
+                            <div class="info-value">${data.network || 'Не определена'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Версия IP</div>
+                            <div class="info-value">${data.version || 'Не определена'}</div>
+                        </div>
+                        ${data.mobile ? `
+                        <div class="info-card">
+                            <div class="info-label">Мобильный</div>
+                            <div class="info-value"><span class="badge badge-green">Да</span></div>
+                        </div>
+                        ` : ''}
+                        ${data.proxy ? `
+                        <div class="info-card">
+                            <div class="info-label">Прокси/VPN</div>
+                            <div class="info-value"><span class="badge badge-yellow">Обнаружен</span></div>
+                        </div>
+                        ` : ''}
+                        ${data.hosting ? `
+                        <div class="info-card">
+                            <div class="info-label">Хостинг</div>
+                            <div class="info-value"><span class="badge badge-red">Да</span></div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                ${whoisHTML}
             `;
             
             document.getElementById('resultContent').innerHTML = resultHTML;
             document.getElementById('result').classList.add('active');
             
-            // Показываем карту
-            showLocation(data.lat, data.lon, `${data.city || ''}, ${data.country}`, accuracy.radius);
-        }
-
-        function determineAccuracy(data) {
-            // Определяем точность на основе наличия данных
-            if (data.city && data.postal) {
-                return { text: 'Высокая точность (город)', class: 'accuracy-high', radius: 5000 };
-            } else if (data.city) {
-                return { text: 'Средняя точность (город)', class: 'accuracy-medium', radius: 10000 };
-            } else {
-                return { text: 'Низкая точность (страна)', class: 'accuracy-low', radius: 50000 };
+            if (data.lat && data.lon) {
+                showLocation(data.lat, data.lon, `${data.city || ''}, ${data.country}`, 5000);
             }
         }
 
@@ -540,7 +635,7 @@
             showLoading();
             
             try {
-                const data = await getPhoneData(phone);
+                const data = await getFullPhoneData(phone);
                 
                 if (data) {
                     displayPhoneResult(data);
@@ -548,172 +643,164 @@
                     showError('Не удалось получить данные об этом номере');
                 }
             } catch (error) {
-                showError('Ошибка при получении данных: ' + error.message);
+                showError('Ошибка: ' + error.message);
             } finally {
                 hideLoading();
             }
         }
 
-        async function getPhoneData(phone) {
-            // Используем бесплатные API для определения страны и оператора
-            const apis = [
-                {
-                    name: 'numverify',
-                    url: `https://numverify.com/api/validate?number=${phone}`,
-                    parse: (data) => ({
-                        phone: data.number,
-                        country: data.country_name,
-                        countryCode: data.country_code,
-                        carrier: data.carrier,
-                        type: data.line_type,
-                        valid: data.valid,
-                        location: data.location
-                    })
-                },
-                {
-                    name: 'abstractapi',
-                    url: `https://phonevalidation.abstractapi.com/v1/?api_key=demo&phone=${phone}`,
-                    parse: (data) => ({
+        async function getFullPhoneData(phone) {
+            // Пытаемся получить данные через API
+            try {
+                const response = await fetch(`https://phonevalidation.abstractapi.com/v1/?api_key=demo&phone=${phone}`);
+                const data = await response.json();
+                
+                if (data && !data.error) {
+                    return {
                         phone: data.phone,
                         country: data.country?.name,
                         countryCode: data.country?.code,
                         carrier: data.carrier,
                         type: data.type,
                         valid: data.valid,
-                        location: data.location
-                    })
+                        location: data.location,
+                        international: data.format?.international,
+                        local: data.format?.local
+                    };
                 }
-            ];
-            
-            // Пробуем API
-            for (const api of apis) {
-                try {
-                    const response = await fetch(api.url);
-                    const data = await response.json();
-                    
-                    if (data && !data.error) {
-                        return api.parse(data);
-                    }
-                } catch (error) {
-                    console.log(`API ${api.name} error:`, error);
-                    continue;
-                }
+            } catch (error) {
+                console.log('Abstract API error:', error);
             }
             
-            // Если API недоступны, используем локальную базу
+            // Fallback на локальную базу
             return getLocalPhoneData(phone);
         }
 
         function getLocalPhoneData(phone) {
-            // Очищаем номер
             const cleanPhone = phone.replace(/[^\d+]/g, '');
             
-            // База кодов стран
-            const countryCodes = {
-                '+7': { name: 'Россия/Казахстан', code: 'RU/KZ', flag: '🇷🇺' },
-                '+1': { name: 'США/Канада', code: 'US/CA', flag: '🇺🇸' },
-                '+44': { name: 'Великобритания', code: 'GB', flag: '🇬🇧' },
-                '+49': { name: 'Германия', code: 'DE', flag: '🇩🇪' },
-                '+33': { name: 'Франция', code: 'FR', flag: '🇫🇷' },
-                '+86': { name: 'Китай', code: 'CN', flag: '🇨🇳' },
-                '+91': { name: 'Индия', code: 'IN', flag: '🇮🇳' },
-                '+55': { name: 'Бразилия', code: 'BR', flag: '🇧🇷' },
-                '+81': { name: 'Япония', code: 'JP', flag: '🇯🇵' },
-                '+82': { name: 'Южная Корея', code: 'KR', flag: '🇰🇷' },
-                '+61': { name: 'Австралия', code: 'AU', flag: '🇦🇺' },
-                '+380': { name: 'Украина', code: 'UA', flag: '🇺🇦' },
-                '+375': { name: 'Беларусь', code: 'BY', flag: '🇧🇾' },
-                '+90': { name: 'Турция', code: 'TR', flag: '🇹🇷' },
-                '+39': { name: 'Италия', code: 'IT', flag: '🇮🇹' },
-                '+34': { name: 'Испания', code: 'ES', flag: '🇪🇸' },
-                '+31': { name: 'Нидерланды', code: 'NL', flag: '🇳🇱' },
-                '+46': { name: 'Швеция', code: 'SE', flag: '🇸🇪' },
-                '+47': { name: 'Норвегия', code: 'NO', flag: '🇳🇴' },
-                '+45': { name: 'Дания', code: 'DK', flag: '🇩🇰' },
-                '+358': { name: 'Финляндия', code: 'FI', flag: '🇫🇮' },
-                '+48': { name: 'Польша', code: 'PL', flag: '🇵🇱' },
-                '+420': { name: 'Чехия', code: 'CZ', flag: '🇨🇿' },
-                '+43': { name: 'Австрия', code: 'AT', flag: '🇦🇹' },
-                '+41': { name: 'Швейцария', code: 'CH', flag: '🇨🇭' },
-                '+32': { name: 'Бельгия', code: 'BE', flag: '🇧🇪' },
-                '+351': { name: 'Португалия', code: 'PT', flag: '🇵🇹' },
-                '+30': { name: 'Греция', code: 'GR', flag: '🇬🇷' },
-                '+353': { name: 'Ирландия', code: 'IE', flag: '🇮🇪' },
-                '+972': { name: 'Израиль', code: 'IL', flag: '🇮🇱' },
-                '+966': { name: 'Саудовская Аравия', code: 'SA', flag: '🇸🇦' },
-                '+971': { name: 'ОАЭ', code: 'AE', flag: '🇦🇪' },
-                '+65': { name: 'Сингапур', code: 'SG', flag: '🇸🇬' },
-                '+60': { name: 'Малайзия', code: 'MY', flag: '🇲🇾' },
-                '+66': { name: 'Таиланд', code: 'TH', flag: '🇹🇭' },
-                '+84': { name: 'Вьетнам', code: 'VN', flag: '🇻🇳' },
-                '+62': { name: 'Индонезия', code: 'ID', flag: '🇮🇩' },
-                '+63': { name: 'Филиппины', code: 'PH', flag: '🇵🇭' },
-                '+92': { name: 'Пакистан', code: 'PK', flag: '🇵🇰' },
-                '+880': { name: 'Бангладеш', code: 'BD', flag: '🇧🇩' },
-                '+234': { name: 'Нигерия', code: 'NG', flag: '🇳🇬' },
-                '+20': { name: 'Египет', code: 'EG', flag: '🇪🇬' },
-                '+27': { name: 'ЮАР', code: 'ZA', flag: '🇿🇦' }
+            // База данных российских операторов
+            const russianCarriers = {
+                '900': { carrier: 'МТС', region: 'Москва и область' },
+                '901': { carrier: 'МТС', region: 'Северо-Запад' },
+                '902': { carrier: 'МТС', region: 'Урал' },
+                '903': { carrier: 'Билайн', region: 'Москва и область' },
+                '904': { carrier: 'Билайн', region: 'Северо-Запад' },
+                '905': { carrier: 'Билайн', region: 'Центральный регион' },
+                '906': { carrier: 'Билайн', region: 'Поволжье' },
+                '909': { carrier: 'Билайн', region: 'Юг России' },
+                '910': { carrier: 'МТС', region: 'Центральный регион' },
+                '911': { carrier: 'МТС', region: 'Северо-Запад' },
+                '912': { carrier: 'МТС', region: 'Урал' },
+                '913': { carrier: 'МТС', region: 'Сибирь' },
+                '914': { carrier: 'МТС', region: 'Дальний Восток' },
+                '915': { carrier: 'МТС', region: 'Центральный регион' },
+                '916': { carrier: 'МТС', region: 'Москва и область' },
+                '917': { carrier: 'МТС', region: 'Поволжье' },
+                '918': { carrier: 'МТС', region: 'Юг России' },
+                '919': { carrier: 'МТС', region: 'Центральный регион' },
+                '920': { carrier: 'МегаФон', region: 'Центральный регион' },
+                '921': { carrier: 'МегаФон', region: 'Северо-Запад' },
+                '922': { carrier: 'МегаФон', region: 'Урал' },
+                '923': { carrier: 'МегаФон', region: 'Сибирь' },
+                '924': { carrier: 'МегаФон', region: 'Дальний Восток' },
+                '925': { carrier: 'МегаФон', region: 'Москва и область' },
+                '926': { carrier: 'МегаФон', region: 'Москва и область' },
+                '927': { carrier: 'МегаФон', region: 'Поволжье' },
+                '928': { carrier: 'МегаФон', region: 'Юг России' },
+                '929': { carrier: 'МегаФон', region: 'Центральный регион' },
+                '930': { carrier: 'МегаФон', region: 'Центральный регион' },
+                '931': { carrier: 'МегаФон', region: 'Северо-Запад' },
+                '932': { carrier: 'МегаФон', region: 'Урал' },
+                '933': { carrier: 'МегаФон', region: 'Сибирь' },
+                '934': { carrier: 'МегаФон', region: 'Дальний Восток' },
+                '935': { carrier: 'МегаФон', region: 'Центральный регион' },
+                '936': { carrier: 'МегаФон', region: 'Москва и область' },
+                '937': { carrier: 'МегаФон', region: 'Поволжье' },
+                '938': { carrier: 'МегаФон', region: 'Юг России' },
+                '939': { carrier: 'МегаФон', region: 'Центральный регион' },
+                '950': { carrier: 'Tele2', region: 'Центральный регион' },
+                '951': { carrier: 'Tele2', region: 'Северо-Запад' },
+                '952': { carrier: 'Tele2', region: 'Урал' },
+                '953': { carrier: 'Tele2', region: 'Сибирь' },
+                '954': { carrier: 'Tele2', region: 'Дальний Восток' },
+                '955': { carrier: 'Tele2', region: 'Москва и область' },
+                '956': { carrier: 'Tele2', region: 'Поволжье' },
+                '957': { carrier: 'Tele2', region: 'Юг России' },
+                '958': { carrier: 'Tele2', region: 'Центральный регион' },
+                '959': { carrier: 'Tele2', region: 'Северо-Запад' },
+                '960': { carrier: 'Билайн', region: 'Северо-Запад' },
+                '961': { carrier: 'Билайн', region: 'Урал' },
+                '962': { carrier: 'Билайн', region: 'Сибирь' },
+                '963': { carrier: 'Билайн', region: 'Дальний Восток' },
+                '964': { carrier: 'Билайн', region: 'Центральный регион' },
+                '965': { carrier: 'Билайн', region: 'Москва и область' },
+                '966': { carrier: 'Билайн', region: 'Поволжье' },
+                '967': { carrier: 'Билайн', region: 'Юг России' },
+                '968': { carrier: 'Билайн', region: 'Центральный регион' },
+                '969': { carrier: 'Билайн', region: 'Северо-Запад' }
             };
             
-            // Определяем страну по коду
-            let countryData = null;
-            for (const [code, data] of Object.entries(countryCodes)) {
+            if (cleanPhone.startsWith('+7') || cleanPhone.startsWith('7') || cleanPhone.startsWith('8')) {
+                let number = cleanPhone;
+                if (number.startsWith('+7')) number = number.slice(2);
+                if (number.startsWith('7')) number = number.slice(1);
+                if (number.startsWith('8')) number = number.slice(1);
+                
+                const prefix = number.slice(0, 3);
+                const operatorData = russianCarriers[prefix];
+                
+                return {
+                    phone: cleanPhone,
+                    country: 'Россия',
+                    countryCode: 'RU',
+                    carrier: operatorData?.carrier || 'Неизвестный оператор',
+                    region: operatorData?.region || 'Регион не определен',
+                    type: 'mobile',
+                    valid: number.length === 10,
+                    location: operatorData?.region || 'Россия'
+                };
+            }
+            
+            // Для других стран - упрощенное определение
+            const countryCodes = {
+                '+1': 'США/Канада',
+                '+44': 'Великобритания',
+                '+49': 'Германия',
+                '+33': 'Франция',
+                '+86': 'Китай',
+                '+91': 'Индия',
+                '+55': 'Бразилия',
+                '+81': 'Япония',
+                '+82': 'Южная Корея',
+                '+61': 'Австралия',
+                '+380': 'Украина',
+                '+375': 'Беларусь',
+                '+90': 'Турция',
+                '+39': 'Италия',
+                '+34': 'Испания'
+            };
+            
+            for (const [code, country] of Object.entries(countryCodes)) {
                 if (cleanPhone.startsWith(code)) {
-                    countryData = data;
-                    break;
+                    return {
+                        phone: cleanPhone,
+                        country: country,
+                        countryCode: code,
+                        carrier: 'Оператор не определен',
+                        type: 'mobile',
+                        valid: true,
+                        location: country
+                    };
                 }
             }
             
-            if (!countryData) {
-                return null;
-            }
-            
-            // Определяем оператора для России
-            let carrier = 'Неизвестный оператор';
-            if (countryData.code === 'RU/KZ' && cleanPhone.startsWith('+7')) {
-                const number = cleanPhone.slice(2);
-                const prefix = number.slice(0, 3);
-                
-                const russianCarriers = {
-                    '900': 'МТС', '901': 'МТС', '902': 'МТС', '903': 'Билайн',
-                    '904': 'Билайн', '905': 'Билайн', '906': 'Билайн',
-                    '909': 'Билайн', '910': 'МТС', '911': 'МТС', '912': 'МТС',
-                    '913': 'МТС', '914': 'МТС', '915': 'МТС', '916': 'МТС',
-                    '917': 'МТС', '918': 'МТС', '919': 'МТС',
-                    '920': 'МегаФон', '921': 'МегаФон', '922': 'МегаФон',
-                    '923': 'МегаФон', '924': 'МегаФон', '925': 'МегаФон',
-                    '926': 'МегаФон', '927': 'МегаФон', '928': 'МегаФон',
-                    '929': 'МегаФон', '930': 'МегаФон', '931': 'МегаФон',
-                    '932': 'МегаФон', '933': 'МегаФон', '934': 'МегаФон',
-                    '935': 'МегаФон', '936': 'МегаФон', '937': 'МегаФон',
-                    '938': 'МегаФон', '939': 'МегаФон',
-                    '950': 'Tele2', '951': 'Tele2', '952': 'Tele2',
-                    '953': 'Tele2', '954': 'Tele2', '955': 'Tele2',
-                    '956': 'Tele2', '957': 'Tele2', '958': 'Tele2',
-                    '959': 'Tele2', '960': 'Билайн', '961': 'Билайн',
-                    '962': 'Билайн', '963': 'Билайн', '964': 'Билайн',
-                    '965': 'Билайн', '966': 'Билайн', '967': 'Билайн',
-                    '968': 'Билайн', '969': 'Билайн'
-                };
-                
-                carrier = russianCarriers[prefix] || 'Неизвестный оператор';
-            }
-            
-            return {
-                phone: cleanPhone,
-                country: countryData.name,
-                countryCode: countryData.code,
-                carrier: carrier,
-                type: 'mobile',
-                valid: true,
-                location: countryData.name
-            };
+            return null;
         }
 
         function displayPhoneResult(data) {
-            // Координаты центра страны для карты
             const countryCoords = {
-                'RU/KZ': [55.7558, 37.6173],
+                'RU': [55.7558, 37.6173],
                 'US/CA': [39.8283, -98.5795],
                 'GB': [51.5074, -0.1278],
                 'DE': [52.5200, 13.4050],
@@ -728,74 +815,63 @@
                 'BY': [53.9045, 27.5615],
                 'TR': [39.9334, 32.8597],
                 'IT': [41.9028, 12.4964],
-                'ES': [40.4168, -3.7038],
-                'NL': [52.3676, 4.9041],
-                'SE': [59.3293, 18.0686],
-                'NO': [59.9139, 10.7522],
-                'DK': [55.6761, 12.5683],
-                'FI': [60.1699, 24.9384],
-                'PL': [52.2297, 21.0122],
-                'CZ': [50.0755, 14.4378],
-                'AT': [48.2082, 16.3738],
-                'CH': [46.9480, 7.4474],
-                'BE': [50.8503, 4.3517],
-                'PT': [38.7223, -9.1393],
-                'GR': [37.9838, 23.7275],
-                'IE': [53.3498, -6.2603],
-                'IL': [31.7683, 35.2137],
-                'SA': [24.7136, 46.6753],
-                'AE': [24.4539, 54.3773],
-                'SG': [1.3521, 103.8198],
-                'MY': [3.1390, 101.6869],
-                'TH': [13.7563, 100.5018],
-                'VN': [21.0285, 105.8542],
-                'ID': [-6.2088, 106.8456],
-                'PH': [14.5995, 120.9842],
-                'PK': [30.3753, 69.3451],
-                'BD': [23.8103, 90.4125],
-                'NG': [9.0579, 7.4951],
-                'EG': [30.0444, 31.2357],
-                'ZA': [-26.2041, 28.0473]
+                'ES': [40.4168, -3.7038]
             };
             
-            const coords = countryCoords[data.countryCode] || [20, 0];
+            const coords = countryCoords[data.countryCode] || countryCoords[data.country] || [20, 0];
             
             const resultHTML = `
-                <div class="info-grid">
-                    <div class="info-card">
-                        <div class="info-label">Номер телефона</div>
-                        <div class="info-value">${data.phone}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Страна</div>
-                        <div class="info-value">${data.country}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Оператор</div>
-                        <div class="info-value">${data.carrier}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Тип</div>
-                        <div class="info-value">${data.type === 'mobile' ? '📱 Мобильный' : '☎️ Стационарный'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Статус</div>
-                        <div class="info-value">${data.valid ? '✅ Валидный' : '❌ Невалидный'}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-label">Точность</div>
-                        <div class="info-value">
-                            <span class="accuracy-badge accuracy-low">Страна (точное местоположение недоступно)</span>
+                <div class="section">
+                    <h3 class="section-title">📱 Информация о номере</h3>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">Номер телефона</div>
+                            <div class="info-value">${data.phone}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Страна</div>
+                            <div class="info-value">${data.country}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Оператор</div>
+                            <div class="info-value highlight">${data.carrier}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Регион регистрации</div>
+                            <div class="info-value">${data.region || 'Не определен'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Тип номера</div>
+                            <div class="info-value">${data.type === 'mobile' ? '📱 Мобильный' : '☎️ Стационарный'}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">Статус</div>
+                            <div class="info-value">
+                                <span class="badge ${data.valid ? 'badge-green' : 'badge-red'}">
+                                    ${data.valid ? '✅ Валидный' : '❌ Невалидный'}
+                                </span>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="section">
+                    <h3 class="section-title">📍 Текущее местоположение</h3>
+                    <div class="info-card">
+                        <div class="info-label">Последняя известная локация</div>
+                        <div class="info-value">${data.location || 'Не определена'}</div>
+                    </div>
+                    <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                        ⚠️ Точное местоположение абонента недоступно по юридическим причинам.
+                        Показан регион регистрации номера.
+                    </p>
                 </div>
             `;
             
             document.getElementById('resultContent').innerHTML = resultHTML;
             document.getElementById('result').classList.add('active');
             
-            // Показываем карту с центром страны
-            showLocation(coords[0], coords[1], data.country, 500000);
+            showLocation(coords[0], coords[1], data.country, 300000);
         }
 
         // Обработчики Enter
@@ -810,4 +886,4 @@
         });
     </script>
 </body>
-</html>
+</html
